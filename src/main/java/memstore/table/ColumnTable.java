@@ -16,7 +16,7 @@ public class ColumnTable implements Table {
     int numCols;
     int numRows;
     ByteBuffer columns;
-
+    private long colSum = 0;
     public ColumnTable() { }
 
     /**
@@ -36,6 +36,8 @@ public class ColumnTable implements Table {
             for (int colId = 0; colId < numCols; colId++) {
                 int offset = ByteFormat.FIELD_LEN * ((colId * numRows) + rowId);
                 this.columns.putInt(offset, curRow.getInt(ByteFormat.FIELD_LEN*colId));
+                if(colId == 0)
+                    colSum += curRow.getInt(ByteFormat.FIELD_LEN*colId);
             }
         }
     }
@@ -55,6 +57,9 @@ public class ColumnTable implements Table {
     @Override
     public void putIntField(int rowId, int colId, int field) {
         int offset = ByteFormat.FIELD_LEN * ((colId * numRows) + rowId);
+        if(colId == 0) {
+            colSum = colSum - getIntField(rowId, colId) + field;
+        }
         columns.putInt(offset, field);
     }
 
@@ -67,7 +72,8 @@ public class ColumnTable implements Table {
     @Override
     public long columnSum() {
         // TODO: Implement this!
-        return 0;
+
+        return colSum;
     }
 
     /**
@@ -80,7 +86,14 @@ public class ColumnTable implements Table {
     @Override
     public long predicatedColumnSum(int threshold1, int threshold2) {
         // TODO: Implement this!
-        return 0;
+        long sum = 0;
+        for (int rowId = 0; rowId < numRows; rowId++) {
+            if(getIntField(rowId, 1) <=threshold1 || getIntField(rowId, 2) >= threshold2) {
+                continue;
+            }
+            sum += getIntField(rowId, 0);
+        }
+        return sum;
     }
 
     /**
@@ -92,7 +105,16 @@ public class ColumnTable implements Table {
     @Override
     public long predicatedAllColumnsSum(int threshold) {
         // TODO: Implement this!
-        return 0;
+        long sum = 0;
+        for (int rowId = 0; rowId < numRows; rowId++) {
+            if (getIntField(rowId, 0) <= threshold) {
+                continue;
+            }
+            for (int colId = 0; colId < numCols; colId++) {
+                sum += getIntField(rowId, colId);
+            }
+        }
+        return sum;
     }
 
     /**
@@ -104,6 +126,14 @@ public class ColumnTable implements Table {
     @Override
     public int predicatedUpdate(int threshold) {
         // TODO: Implement this!
-        return 0;
+        int updates = 0;
+        for (int rowId = 0; rowId < numRows; rowId++) {
+            if (getIntField(rowId, 0) >= threshold) {
+                continue;
+            }
+            updates++;
+            putIntField(rowId, 3, getIntField(rowId, 2) + getIntField(rowId, 3));
+        }
+        return updates;
     }
 }

@@ -47,7 +47,8 @@ public class RowTable implements Table {
     @Override
     public int getIntField(int rowId, int colId) {
         // TODO: Implement this!
-        return 0;
+        int offset =  ByteFormat.FIELD_LEN * ((rowId * numCols) + colId);
+        return rows.getInt(offset);
     }
 
     /**
@@ -56,6 +57,8 @@ public class RowTable implements Table {
     @Override
     public void putIntField(int rowId, int colId, int field) {
         // TODO: Implement this!
+        int offset =  ByteFormat.FIELD_LEN * ((rowId * numCols) + colId);
+        rows.putInt(offset, field);
     }
 
     /**
@@ -67,7 +70,11 @@ public class RowTable implements Table {
     @Override
     public long columnSum() {
         // TODO: Implement this!
-        return 0;
+        long sum = 0;
+        for (int rowId = 0; rowId < numRows; rowId++) {
+            sum += getIntField(rowId, 0);
+        }
+        return sum;
     }
 
     /**
@@ -80,7 +87,14 @@ public class RowTable implements Table {
     @Override
     public long predicatedColumnSum(int threshold1, int threshold2) {
         // TODO: Implement this!
-        return 0;
+        long sum = 0;
+        for (int rowId = 0; rowId < numRows; rowId++) {
+            if(getIntField(rowId, 1) <= threshold1 || getIntField(rowId, 2) >= threshold2) {
+                continue;
+            }
+            sum += getIntField(rowId, 0);
+        }
+        return sum;
     }
 
     /**
@@ -92,7 +106,15 @@ public class RowTable implements Table {
     @Override
     public long predicatedAllColumnsSum(int threshold) {
         // TODO: Implement this!
-        return 0;
+        long sum = 0;
+        for (int rowId = 0; rowId < numRows; rowId++) {
+            if(getIntField(rowId, 0) > threshold) {
+                for (int colId = 0; colId < numCols; colId++) {
+                    sum += getIntField(rowId, colId);
+                }
+            }
+        }
+        return sum;
     }
 
     /**
@@ -104,6 +126,14 @@ public class RowTable implements Table {
     @Override
     public int predicatedUpdate(int threshold) {
         // TODO: Implement this!
-        return 0;
+        int updates = 0;
+        for (int rowId = 0; rowId < numRows; rowId++) {
+            if(getIntField(rowId, 0) < threshold) {
+                int fieldId = getIntField(rowId, 2) + getIntField(rowId, 3);
+                putIntField(rowId, 3, fieldId);
+                updates++;
+            }
+        }
+        return updates;
     }
 }
